@@ -1,0 +1,12 @@
+# Ambiente Virtual
+.venv/
+
+# Variáveis de Ambiente (Segurança)
+.env
+
+# Arquivo específico que você quer ignorar
+dados.py
+
+# Bytecode do Python (Gera sujeira no repositório se não ignorar)
+__pycache__/
+*.pyc
