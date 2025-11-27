@@ -31,3 +31,49 @@ class Unbox_Model:
         """)
         
         self.conn.commit()
+
+
+    def create_category(self, name):
+        """
+        Cria categoria para o banco de dados.
+        
+        :param self: self
+        :param name: Nome da categoria
+        """
+        try:
+            cur = self.conn.cursor()
+            cur.execute("INSERT INTO categories (name) VALUES (?)", (name,))
+            self.conn.commit()
+            print(f"Categoria '{name}' criada com sucesso!")
+        except Exception as e:
+            print(f"[X] Erro: {e}")
+    
+    
+    def create_item(self, name, serial_number, category_name):
+        """
+        Cria item para adicionar a tabela desejada.
+        
+        :param self: self
+        :param name: Nome do item
+        :param serial_number: Número de indentificação do item
+        :param category_name: Nome da categoria
+        """
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT id FROM categories WHERE name = ?", (category_name,))
+            coluna = cur.fetchone()
+            
+            if coluna:
+                try:
+                    category_id = coluna[0]
+                    cur.execute("""
+                                INSERT INTO inventory (name, serial_number, category_id) 
+                                VALUES (?, ?, ?)""", (name, serial_number, category_id)
+                                )
+                    self.conn.commit()
+                    
+                except Exception as e:
+                    print(f"[X] Erro: {e}")
+                             
+        except Exception as e:
+            print(f"[X] Erro: {e}")
