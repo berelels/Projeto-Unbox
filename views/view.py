@@ -32,3 +32,25 @@ class Unbox_View:
                 ft.DataColumn(ft.Text("Categoria", color=self.TEXT_SUB, weight="bold")),
                 ft.DataColumn(ft.Text("Status", color=self.TEXT_SUB, weight="bold")),], rows=[])
         
+    def criar_input(self, label, icone=None):
+        return ft.TextField(
+            label=label, label_style=ft.TextStyle(color=self.TEXT_SUB),
+            border_color=self.COR_ACCENT, color=self.TEXT_COLOR, bgcolor="#0f172a",
+            height=50, text_size=14, prefix_icon=icone, border_radius=8)
+    
+    def criar_dropdown(self, label):
+        return ft.Dropdown(
+            label=label, label_style=ft.TextStyle(color=self.TEXT_SUB),
+            border_color=self.COR_ACCENT, color=self.TEXT_COLOR, bgcolor="#0f172a",
+            height=50, text_size=14, border_radius=8, options=[])
+    
+    def criar_card_dashboard(self, titulo, valor, icone, cor_icone):
+        return ft.Container(
+            bgcolor=self.CARD_COLOR, padding=20, border_radius=15, width=220,
+            content=ft.Column([
+                ft.Row([
+                ft.Text(titulo, color=self.TEXT_SUB, size=12),
+                ft.Container(bgcolor=cor_icone, padding=5, border_radius=5, content=
+                ft.Icon(icone, color="white", size=16))], alignment=
+                ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Text(valor, color=self.TEXT_COLOR, size=28, weight="bold"),]))
