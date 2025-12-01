@@ -277,4 +277,66 @@ class Unbox_Model:
             return stats
 
         except Exception as e:
-            print(f"[X] Erro: {e}")        
+            print(f"[X] Erro: {e}")
+            
+
+    def get_items_paginated(self, page_number=1, page_size=20):
+        """
+        Recupera itens do inventário com paginação.
+        Args:
+            page_number (int, optional): Número da página a ser recuperada. 
+                                         Padrão é 1. Deve ser maior que 0.
+            page_size (int, optional): Quantidade de itens por página. 
+                                       Padrão é 20.
+        Returns:
+            list: Lista contendo os itens recuperados do banco de dados.
+                  Retorna uma lista vazia [] em caso de erro.
+        """
+        
+        try:
+            cur = self.conn.cursor()
+            offset = (page_number - 1) * page_size
+                
+            cur.execute("""
+                SELECT * FROM inventory 
+                LIMIT ? OFFSET ?
+            """, (page_size, offset))
+                
+            items = cur.fetchall()
+            return items
+
+        except Exception as e:
+            print(f"[X] Erro na paginação: {e}")
+            return []
+        
+    
+    def get_active_loans_by_staff(self, staff_id):
+        """
+        Obtém a lista de empréstimos ativos de um funcionário.
+        
+        Este método consulta o banco de dados para recuperar todos os itens de inventário
+        que foram emprestados por um funcionário específico e ainda não foram devolvidos.
+        Calcula o saldo de cada item considerando movimentações de saída (OUT) e entrada.
+        Args:
+            staff_id: Identificador único do funcionário.
+        Returns:
+            list: Lista de tuplas contendo (inventory_id, balance) para cada item com saldo positivo.
+                  Retorna uma lista vazia em caso de erro ou se não houver empréstimos ativos.
+        """
+        
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                SELECT inventory_id, SUM(CASE WHEN type = 'OUT' THEN quantity ELSE -quantity END) as balance
+                FROM movements
+                WHERE staff_id = ?
+                GROUP BY inventory_id
+                HAVING balance > 0
+            """, (staff_id,))
+            
+            active_loans = cur.fetchall()
+            return active_loans
+
+        except Exception as e:
+            print(f"[X] Erro: {e}")
+            return []
