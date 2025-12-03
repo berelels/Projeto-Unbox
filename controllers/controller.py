@@ -157,6 +157,7 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Item '{nome}' cadastrado!", ft.Colors.GREEN)
             self.limpar_campos_item()
             self.carregar_itens_tabela()
+            self.carregar_dashboard_stats()  # Atualiza dashboard
             
         except Exception as ex:
             self.mostrar_snackbar(f"Erro ao salvar item: {ex}", ft.Colors.RED)
@@ -220,7 +221,7 @@ class Unbox_Controller:
             
             for item in itens:
                 id_item, nome, serial, cat_id, loc_id, qtd, min_stock = item
-                if qtd > 0:  # Apenas itens disponíveis
+                if qtd > 0:
                     opcao = ft.dropdown.Option(
                         key=serial,
                         text=f"{serial} - {nome} (Qtd: {qtd})"
@@ -257,6 +258,7 @@ class Unbox_Controller:
             
             self.carregar_itens_disponiveis()
             self.carregar_movimentacoes_tabela()
+            self.carregar_dashboard_stats()
             
         except Exception as ex:
             self.mostrar_snackbar(f"Erro ao realizar empréstimo: {ex}", ft.Colors.RED)
@@ -278,6 +280,7 @@ class Unbox_Controller:
             
             self.carregar_itens_disponiveis()
             self.carregar_movimentacoes_tabela()
+            self.carregar_dashboard_stats()  # Atualiza dashboard
             
         except Exception as ex:
             self.mostrar_snackbar(f"Erro ao registrar devolução: {ex}", ft.Colors.RED)
@@ -288,12 +291,47 @@ class Unbox_Controller:
             if not self.view or not hasattr(self.view, 'movimentacoes_data_table'):
                 return
                 
-            # Por enquanto, deixa vazio - implementar consulta de movimentos ativos
             self.view.movimentacoes_data_table.rows.clear()
+            
+            # Busca movimentações recentes
+            movimentos = self.model.get_recent_movements(50)
+            
+            for mov in movimentos:
+                mov_id, inv_id, staff_id, tipo, qtd, timestamp, item_nome, item_serial, staff_nome = mov
+                
+                # Define cor baseado no tipo
+                tipo_text = "Saída" if tipo == "OUT" else "Entrada"
+                tipo_color = ft.Colors.RED if tipo == "OUT" else ft.Colors.GREEN
+                
+                # Formata data
+                try:
+                    from datetime import datetime
+                    data_obj = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                    data_formatada = data_obj.strftime("%d/%m/%Y %H:%M")
+                except:
+                    data_formatada = timestamp
+                
+                row = ft.DataRow(cells=[
+                    ft.DataCell(ft.Text(str(mov_id))),
+                    ft.DataCell(ft.Text(item_serial)),
+                    ft.DataCell(ft.Text(item_nome)),
+                    ft.DataCell(ft.Text(staff_nome)),
+                    ft.DataCell(ft.Text(data_formatada)),
+                    ft.DataCell(ft.Container(
+                        content=ft.Text(tipo_text, color="white", size=12),
+                        bgcolor=tipo_color,
+                        padding=5,
+                        border_radius=5
+                    )),
+                ])
+                self.view.movimentacoes_data_table.rows.append(row)
+            
             self.page.update()
             
         except Exception as e:
             print(f"Erro ao carregar movimentações: {e}")
+            import traceback
+            traceback.print_exc()
  
     def gerar_recibo_pdf(self, patrimonio, pessoa):
         """Gera recibo em PDF"""

@@ -31,7 +31,7 @@ class TelaPrincipalView:
             border_radius=10,
             padding=20,
             bgcolor=ft.Colors.ORANGE_50,
-            border=ft.border.all(2, ft.Colors.ORANGE_200),
+            border=ft.border.all(5, ft.Colors.ORANGE_200),
             alignment=ft.alignment.center,
         )
         
@@ -47,7 +47,7 @@ class TelaPrincipalView:
             border_radius=10,
             padding=20,
             bgcolor=ft.Colors.BLUE_50,
-            border=ft.border.all(2, ft.Colors.BLUE_200),
+            border=ft.border.all(5, ft.Colors.BLUE_200),
             alignment=ft.alignment.center,
         )
         
@@ -63,7 +63,7 @@ class TelaPrincipalView:
             border_radius=10,
             padding=20,
             bgcolor=ft.Colors.GREEN_50,
-            border=ft.border.all(2, ft.Colors.GREEN_200),
+            border=ft.border.all(5, ft.Colors.GREEN_200),
             alignment=ft.alignment.center,
         )
         
@@ -159,8 +159,9 @@ class TelaPrincipalView:
                 ft.DataColumn(ft.Text("ID", weight=ft.FontWeight.BOLD)),
                 ft.DataColumn(ft.Text("Patrimônio", weight=ft.FontWeight.BOLD)),
                 ft.DataColumn(ft.Text("Item", weight=ft.FontWeight.BOLD)),
-                ft.DataColumn(ft.Text("Emprestado Para", weight=ft.FontWeight.BOLD)),
+                ft.DataColumn(ft.Text("Responsável", weight=ft.FontWeight.BOLD)),
                 ft.DataColumn(ft.Text("Data", weight=ft.FontWeight.BOLD)),
+                ft.DataColumn(ft.Text("Tipo", weight=ft.FontWeight.BOLD)),
             ],
             rows=[],
             border=ft.border.all(1, ft.Colors.GREY_300),
@@ -240,7 +241,7 @@ class TelaPrincipalView:
                 self.borrowed_items_card,
                 self.low_stock_card,
             ], alignment=ft.MainAxisAlignment.START, wrap=True, spacing=20)
-        ], expand=True, scroll=ft.ScrollMode.AUTO)
+        ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)
 
     def _layout_cadastro_categoria(self):
         """Layout de Cadastro de Categorias - REUTILIZA componentes"""
@@ -273,7 +274,7 @@ class TelaPrincipalView:
                 border_radius=10,
                 padding=10,
             )
-        ], expand=True, scroll=ft.ScrollMode.AUTO)
+        ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)
 
     def _layout_cadastro_item(self):
         """Layout de Cadastro de Itens - REUTILIZA componentes"""
@@ -314,7 +315,7 @@ class TelaPrincipalView:
                 border_radius=10,
                 padding=10,
             )
-        ], expand=True, scroll=ft.ScrollMode.AUTO)
+        ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)
 
     def _layout_movimentacao(self):
         """Layout de Movimentações - REUTILIZA componentes"""
@@ -343,6 +344,7 @@ class TelaPrincipalView:
                         ], horizontal_alignment=ft.CrossAxisAlignment.START),
                         padding=20,
                         width=450,
+                        height=320,
                     ),
                     elevation=5
                 ),
@@ -365,11 +367,12 @@ class TelaPrincipalView:
                             ),
                         ], horizontal_alignment=ft.CrossAxisAlignment.START),
                         padding=20,
-                        width=350,
+                        width=450,
+                        height=320,
                     ),
                     elevation=5
                 ),
-            ], wrap=True, alignment=ft.MainAxisAlignment.START),
+            ], wrap=True, alignment=ft.MainAxisAlignment.START, spacing=20),
             
             ft.Divider(height=30),
             
@@ -380,4 +383,4 @@ class TelaPrincipalView:
                 border_radius=10,
                 padding=10,
             )
-        ], expand=True, scroll=ft.ScrollMode.AUTO)
+        ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)

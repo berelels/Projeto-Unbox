@@ -351,3 +351,43 @@ class Unbox_Model:
         except Exception as e:
             print(f"[X] Erro ao obter categorias: {e}")
             return []
+    
+    
+    
+    def get_recent_movements(self, limit=50):
+        """
+        Obtém as movimentações mais recentes do inventário.
+        
+        Args:
+            limit (int): Número máximo de movimentações a retornar. Padrão é 50.
+        
+        Returns:
+            list: Lista de tuplas contendo (mov_id, inv_id, staff_id, tipo, qtd, timestamp, 
+                  item_nome, item_serial, staff_nome)
+        """
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                SELECT 
+                    m.id,
+                    m.inventory_id,
+                    m.staff_id,
+                    m.type,
+                    m.quantity,
+                    m.timestamp,
+                    i.name as item_name,
+                    i.serial_number,
+                    s.name as staff_name
+                FROM movements m
+                INNER JOIN inventory i ON m.inventory_id = i.id
+                INNER JOIN staff s ON m.staff_id = s.id
+                ORDER BY m.timestamp DESC
+                LIMIT ?
+            """, (limit,))
+            
+            movements = cur.fetchall()
+            return movements
+            
+        except Exception as e:
+            print(f"[X] Erro ao buscar movimentações: {e}")
+            return []
