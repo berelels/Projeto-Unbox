@@ -340,3 +340,14 @@ class Unbox_Model:
         except Exception as e:
             print(f"[X] Erro: {e}")
             return []
+        
+        
+    def obter_categorias(self):
+        """Obtém todas as categorias do banco de dados"""
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT id, name FROM categories ORDER BY name")
+            return cur.fetchall()
+        except Exception as e:
+            print(f"[X] Erro ao obter categorias: {e}")
+            return []

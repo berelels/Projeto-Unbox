@@ -125,9 +125,8 @@ class TelaPrincipalView:
         
         
         ft.Text("Categorias Existentes:", size=18, weight=ft.FontWeight.W_600),
-        ft.Container(
-            content=self.categorias_data_table,
-            
+        ft.Column(
+            controls=[self.categorias_data_table],
             scroll=ft.ScrollMode.ADAPTIVE, 
             expand=True 
         )
@@ -299,8 +298,8 @@ class TelaPrincipalView:
             
            
             ft.Text("Inventário Atual:", size=18, weight=ft.FontWeight.W_600),
-            ft.Container(
-                content=self.itens_data_table,
+            ft.Column(
+                controls=[self.itens_data_table],
                 scroll=ft.ScrollMode.ADAPTIVE, 
                 expand=True 
             )
@@ -395,8 +394,8 @@ class TelaPrincipalView:
             
             ft.Divider(height=20),
             
-            ft.Container(
-                content=self.movimentacoes_data_table,
+            ft.Column(
+                controls=[self.movimentacoes_data_table],
                 expand=True,
                 scroll=ft.ScrollMode.ADAPTIVE
             )
