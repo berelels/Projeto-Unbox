@@ -71,15 +71,7 @@ class Unbox_Model:
     def initialize_database(self):
         """
         Inicializa o banco de dados da aplicação.
-        
-        Este método verifica se o banco de dados existe no diretório de Documentos
-        do usuário. Caso não exista, tenta copiar um template pré-configurado.
-        Se o template não estiver disponível, cria um banco de dados vazio.
-        Após a verificação/criação, estabelece a conexão com o banco de dados.
-        Args:
-            self: Referência à instância da classe.
         """
-        
         base_path = Path.home()
         documents_path = base_path / "Documents"
         db_destination = documents_path / "inventory.db"
@@ -103,20 +95,10 @@ class Unbox_Model:
         
 
     def create_location(self, name, building="Principal"):
-        """
-        Cria um novo local (location) no banco de dados.
-
-        Este método insere um novo registro de localização na tabela 'locations'
-        com o nome e edifício especificados.
-
-        Args:
-            name (str): Nome do local a ser criado.
-            building (str, optional): Nome do edifício ao qual o local pertence.
-                                      Padrão é "Principal".
-        """
+        """Cria um novo local (location) no banco de dados."""
         try:
             cur = self.conn.cursor()
-            cur.execute("INSERT INTO locations (name, building) VALUES (?, ?)", (name, building))
+            cur.execute("INSERT OR IGNORE INTO locations (name, building) VALUES (?, ?)", (name, building))
             self.conn.commit()
             print(f"[OK] Local '{name}' criado.")
         except Exception as e:
@@ -124,19 +106,10 @@ class Unbox_Model:
             
 
     def create_staff(self, name, role="Professor"):
-        """
-        Cria um novo membro da equipe no banco de dados.
-
-        Este método insere um registro de um novo membro da equipe na tabela 'staff',
-        atribuindo um nome e um papel. O papel padrão é 'Professor'.
-
-        Args:
-            name (str): O nome do membro da equipe a ser criado.
-            role (str, opcional): O papel do membro da equipe. O padrão é 'Professor'.
-        """
+        """Cria um novo membro da equipe no banco de dados."""
         try:
             cur = self.conn.cursor()
-            cur.execute("INSERT INTO staff (name, role) VALUES (?, ?)", (name, role))
+            cur.execute("INSERT OR IGNORE INTO staff (name, role) VALUES (?, ?)", (name, role))
             self.conn.commit()
             print(f"[OK] Staff '{name}' criado.")
         except Exception as e:
@@ -144,15 +117,7 @@ class Unbox_Model:
 
 
     def create_category(self, name):
-        """
-        Cria uma nova categoria no banco de dados.
-        
-        Este método insere um novo registro na tabela 'categories' com o nome da categoria fornecido. 
-        Em caso de erro durante a inserção, a transação é revertida e uma mensagem de erro é exibida.
-
-        Args:
-            name (str): O nome da categoria a ser criada.
-        """
+        """Cria uma nova categoria no banco de dados."""
         try:
             cur = self.conn.cursor()
             cur.execute("INSERT INTO categories (name) VALUES (?)", (name,))
@@ -163,17 +128,7 @@ class Unbox_Model:
             
 
     def create_item(self, name, serial_number, category_name, location_name, min_stock=1):
-        """
-        Cria um novo item no inventário.
-        Este método insere um item no banco de dados, associando-o a uma categoria e a um local específicos.
-        Se a categoria ou o local não forem encontrados, uma mensagem de erro será exibida.
-        Args:
-            name (str): O nome do item a ser criado.
-            serial_number (str): O número de série do item.
-            category_name (str): O nome da categoria à qual o item pertence.
-            location_name (str): O nome do local onde o item será armazenado.
-            min_stock (int, opcional): A quantidade mínima em estoque do item. O padrão é 1.
-        """
+        """Cria um novo item no inventário."""
         try:
             cur = self.conn.cursor()
             
@@ -203,17 +158,7 @@ class Unbox_Model:
 
 
     def register_movement(self, serial_number, movement_type, quantity, staff_name):
-        """
-        Registra um movimento de entrada ou saída de um item no inventário.
-        
-        Este método atualiza a quantidade disponível de um item no inventário e registra o movimento
-        realizado por um funcionário. Se o movimento for de saída, verifica se há estoque suficiente.
-        Args:
-            serial_number (str): O número de série do item a ser movimentado.
-            movement_type (str): O tipo de movimento ('IN' para entrada, 'OUT' para saída).
-            quantity (int): A quantidade a ser movimentada.
-            staff_name (str): O nome do funcionário que está realizando o movimento.
-        """
+        """Registra um movimento de entrada ou saída de um item no inventário."""
         cursor = self.conn.cursor()
         try:
             cursor.execute("SELECT id, quantity_available FROM inventory WHERE serial_number = ?", (serial_number,))
@@ -245,27 +190,17 @@ class Unbox_Model:
         except Exception as e:
             self.conn.rollback()
             print(f"[X] Erro Movimento: {e}")
+            raise
             
             
     def get_dashboard_stats(self):
-        """
-        Recupera estatísticas do painel de controle do inventário.
-        
-        Executa consultas no banco de dados para obter informações resumidas sobre
-        o estado atual do inventário, incluindo itens com estoque baixo, itens
-        emprestados e quantidade total de itens.
-        Returns:
-            dict: Dicionário contendo as seguintes chaves:
-                - 'low_stock' (int): Quantidade de itens com estoque abaixo do mínimo permitido
-                - 'borrowed_items' (int): Quantidade total de itens emprestados (movimentações de saída)
-                - 'total_items' (int): Quantidade total de itens no inventário
-        """
-        
+        """Recupera estatísticas do painel de controle do inventário."""
         try:
             cur = self.conn.cursor()
             stats = {}
             
-            cur.execute("SELECT COUNT(*) FROM inventory WHERE quantity_available <= min_stock")
+            # IMPLEMENTAÇÃO: Alerta de estoque baixo (qtd <= min_stock)
+            cur.execute("SELECT COUNT(*) FROM inventory WHERE quantity_available <= min_stock AND quantity_available > 0")
             stats['low_stock'] = cur.fetchone()[0]
             
             cur.execute("SELECT COALESCE(SUM(quantity), 0) FROM movements WHERE type = 'OUT'")
@@ -278,21 +213,11 @@ class Unbox_Model:
 
         except Exception as e:
             print(f"[X] Erro: {e}")
+            return {'low_stock': 0, 'borrowed_items': 0, 'total_items': 0}
             
 
     def get_items_paginated(self, page_number=1, page_size=20):
-        """
-        Recupera itens do inventário com paginação.
-        Args:
-            page_number (int, optional): Número da página a ser recuperada. 
-                                         Padrão é 1. Deve ser maior que 0.
-            page_size (int, optional): Quantidade de itens por página. 
-                                       Padrão é 20.
-        Returns:
-            list: Lista contendo os itens recuperados do banco de dados.
-                  Retorna uma lista vazia [] em caso de erro.
-        """
-        
+        """Recupera itens do inventário com paginação."""
         try:
             cur = self.conn.cursor()
             offset = (page_number - 1) * page_size
@@ -311,19 +236,7 @@ class Unbox_Model:
         
     
     def get_active_loans_by_staff(self, staff_id):
-        """
-        Obtém a lista de empréstimos ativos de um funcionário.
-        
-        Este método consulta o banco de dados para recuperar todos os itens de inventário
-        que foram emprestados por um funcionário específico e ainda não foram devolvidos.
-        Calcula o saldo de cada item considerando movimentações de saída (OUT) e entrada.
-        Args:
-            staff_id: Identificador único do funcionário.
-        Returns:
-            list: Lista de tuplas contendo (inventory_id, balance) para cada item com saldo positivo.
-                  Retorna uma lista vazia em caso de erro ou se não houver empréstimos ativos.
-        """
-        
+        """Obtém a lista de empréstimos ativos de um funcionário."""
         try:
             cur = self.conn.cursor()
             cur.execute("""
@@ -353,18 +266,8 @@ class Unbox_Model:
             return []
     
     
-    
     def get_recent_movements(self, limit=50):
-        """
-        Obtém as movimentações mais recentes do inventário.
-        
-        Args:
-            limit (int): Número máximo de movimentações a retornar. Padrão é 50.
-        
-        Returns:
-            list: Lista de tuplas contendo (mov_id, inv_id, staff_id, tipo, qtd, timestamp, 
-                  item_nome, item_serial, staff_nome)
-        """
+        """Obtém as movimentações mais recentes do inventário."""
         try:
             cur = self.conn.cursor()
             cur.execute("""
@@ -391,3 +294,147 @@ class Unbox_Model:
         except Exception as e:
             print(f"[X] Erro ao buscar movimentações: {e}")
             return []
+    
+    
+    def verifica_patrimonio_existe(self, serial_number):
+        """
+        NOVA IMPLEMENTAÇÃO: Verifica se já existe um item com este número de patrimônio.
+        
+        Args:
+            serial_number (str): Número de patrimônio a verificar
+            
+        Returns:
+            bool: True se já existe, False caso contrário
+        """
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM inventory WHERE serial_number = ?", (serial_number,))
+            count = cur.fetchone()[0]
+            return count > 0
+        except Exception as e:
+            print(f"[X] Erro ao verificar patrimônio: {e}")
+            return False
+    
+    
+    def buscar_item_por_patrimonio(self, serial_number):
+        """
+        NOVA IMPLEMENTAÇÃO: Busca informações completas de um item pelo patrimônio.
+        
+        Args:
+            serial_number (str): Número de patrimônio
+            
+        Returns:
+            tuple: Dados do item ou None se não encontrado
+        """
+        try:
+            cur = self.conn.cursor()
+            cur.execute("""
+                SELECT id, name, serial_number, category_id, location_id, quantity_available, min_stock
+                FROM inventory 
+                WHERE serial_number = ?
+            """, (serial_number,))
+            return cur.fetchone()
+        except Exception as e:
+            print(f"[X] Erro ao buscar item: {e}")
+            return None
+    
+    
+    def verificar_ultimo_emprestimo(self, serial_number):
+        """
+        NOVA IMPLEMENTAÇÃO: Verifica quem foi a última pessoa a pegar emprestado um item.
+        
+        Args:
+            serial_number (str): Número de patrimônio
+            
+        Returns:
+            str: Nome da pessoa que pegou emprestado ou None
+        """
+        try:
+            cur = self.conn.cursor()
+            # Busca o ID do item
+            cur.execute("SELECT id FROM inventory WHERE serial_number = ?", (serial_number,))
+            item = cur.fetchone()
+            if not item:
+                return None
+            inventory_id = item[0]
+            
+            cur.execute("""
+                SELECT s.name
+                FROM movements m
+                INNER JOIN staff s ON m.staff_id = s.id
+                WHERE m.inventory_id = ? AND m.type = 'OUT'
+                ORDER BY m.timestamp DESC
+                LIMIT 1
+            """, (inventory_id,))
+            
+            result = cur.fetchone()
+            return result[0] if result else None
+            
+        except Exception as e:
+            print(f"[X] Erro ao verificar empréstimo: {e}")
+            return None
+    
+    
+    def deletar_categoria(self, categoria_id):
+        """
+        NOVA IMPLEMENTAÇÃO: Deleta uma categoria.
+        
+        Args:
+            categoria_id (int): ID da categoria a deletar
+            
+        Returns:
+            bool: True se deletou com sucesso, False caso contrário
+        """
+        try:
+            cur = self.conn.cursor()
+            
+            cur.execute("SELECT COUNT(*) FROM inventory WHERE category_id = ?", (categoria_id,))
+            count = cur.fetchone()[0]
+            if count > 0:
+                raise ValueError(f"Não é possível deletar. Existem {count} itens usando esta categoria.")
+            
+            cur.execute("DELETE FROM categories WHERE id = ?", (categoria_id,))
+            self.conn.commit()
+            print(f"[OK] Categoria ID {categoria_id} deletada.")
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f"[X] Erro ao deletar categoria: {e}")
+            raise
+    
+    
+    def deletar_item(self, serial_number):
+        """
+        NOVA IMPLEMENTAÇÃO: Deleta um item do inventário.
+        
+        Args:
+            serial_number (str): Número de patrimônio do item
+            
+        Returns:
+            bool: True se deletou com sucesso, False caso contrário
+        """
+        try:
+            cur = self.conn.cursor()
+            
+            cur.execute("SELECT id, quantity_available FROM inventory WHERE serial_number = ?", (serial_number,))
+            item = cur.fetchone()
+            
+            if not item:
+                raise ValueError("Item não encontrado.")
+            
+            inventory_id, qtd_disponivel = item
+            if qtd_disponivel < 0:
+                raise ValueError("Não é possível deletar. Item possui empréstimos ativos.")
+            
+            cur.execute("DELETE FROM movements WHERE inventory_id = ?", (inventory_id,))
+            cur.execute("DELETE FROM inventory WHERE id = ?", (inventory_id,))
+            
+            self.conn.commit()
+            print(f"[OK] Item {serial_number} deletado.")
+            return True
+            
+        except Exception as e:
+            self.conn.rollback()
+            print(f"[X] Erro ao deletar item: {e}")
+            raise

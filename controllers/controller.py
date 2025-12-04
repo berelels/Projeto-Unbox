@@ -49,10 +49,14 @@ class Unbox_Controller:
             self.carregar_dashboard_stats()
         elif index == 1:  # Categorias
             self.view.content_area.content = self.view._layout_cadastro_categoria()
+            # IMPORTANTE: Limpa a tabela antes de carregar
+            self.view.categorias_data_table.rows.clear()
             self.carregar_categorias_tabela()
         elif index == 2:  # Itens
             self.view.content_area.content = self.view._layout_cadastro_item()
             self.preencher_categorias()
+            # IMPORTANTE: Limpa a tabela antes de carregar
+            self.view.itens_data_table.rows.clear()
             self.carregar_itens_tabela()
         elif index == 3:  # Movimentações
             self.view.content_area.content = self.view._layout_movimentacao()
@@ -99,13 +103,16 @@ class Unbox_Controller:
             self.model.create_category(nome)
             self.mostrar_snackbar(f"Categoria '{nome}' cadastrada!", ft.Colors.GREEN)
             self.view.nome_categoria_input.value = ""
+            
+            # Limpa antes de recarregar
+            self.view.categorias_data_table.rows.clear()
             self.carregar_categorias_tabela()
             
         except Exception as ex:
             self.mostrar_snackbar(f"Erro ao salvar categoria: {ex}", ft.Colors.RED)
  
     def carregar_categorias_tabela(self):
-        """Carrega categorias na tabela"""
+        """Carrega categorias na tabela - COM BOTÃO DE DELETAR"""
         try:
             if not self.view or not hasattr(self.view, 'categorias_data_table'):
                 return
@@ -114,9 +121,18 @@ class Unbox_Controller:
             categorias = self.model.obter_categorias()
             
             for id_cat, nome_cat in categorias:
+                # Cria botão de deletar
+                btn_deletar = ft.IconButton(
+                    icon=ft.Icons.DELETE,
+                    icon_color=ft.Colors.RED,
+                    tooltip="Deletar categoria",
+                    on_click=lambda e, cat_id=id_cat, nome=nome_cat: self.deletar_categoria(cat_id, nome)
+                )
+                
                 row = ft.DataRow(cells=[
                     ft.DataCell(ft.Text(str(id_cat))),
                     ft.DataCell(ft.Text(nome_cat)),
+                    ft.DataCell(btn_deletar),
                 ])
                 self.view.categorias_data_table.rows.append(row)
             
@@ -160,6 +176,9 @@ class Unbox_Controller:
             
             self.mostrar_snackbar(f"✅ Item '{nome}' cadastrado com sucesso!", ft.Colors.GREEN)
             self.limpar_campos_item()
+            
+            # Limpa antes de recarregar
+            self.view.itens_data_table.rows.clear()
             self.carregar_itens_tabela()
             self.carregar_dashboard_stats()
             
@@ -176,7 +195,7 @@ class Unbox_Controller:
             self.page.update()
  
     def carregar_itens_tabela(self):
-        """Carrega itens na tabela - COM ALERTA DE ESTOQUE BAIXO"""
+        """Carrega itens na tabela - COM ALERTA DE ESTOQUE BAIXO E BOTÃO DELETAR"""
         try:
             if not self.view or not hasattr(self.view, 'itens_data_table'):
                 return
@@ -202,6 +221,14 @@ class Unbox_Controller:
                     status_text = "Sem estoque"
                     status_color = ft.Colors.RED
                 
+                # Botão de deletar
+                btn_deletar = ft.IconButton(
+                    icon=ft.Icons.DELETE,
+                    icon_color=ft.Colors.RED,
+                    tooltip="Deletar item",
+                    on_click=lambda e, patrimonio=serial, n=nome: self.deletar_item(patrimonio, n)
+                )
+                
                 row = ft.DataRow(cells=[
                     ft.DataCell(ft.Text(serial)),
                     ft.DataCell(ft.Text(nome)),
@@ -213,6 +240,7 @@ class Unbox_Controller:
                         padding=5,
                         border_radius=5
                     )),
+                    ft.DataCell(btn_deletar),
                 ])
                 self.view.itens_data_table.rows.append(row)
             
@@ -275,7 +303,7 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Erro ao realizar empréstimo: {ex}", ft.Colors.RED)
  
     def registrar_devolucao(self, e):
-        """Registra devolução de item - COM INFORMAÇÃO DE QUEM ESTÁ DEVOLVENDO"""
+        """Registra devolução de item - VALIDAÇÃO: SÓ QUEM PEGOU PODE DEVOLVER"""
         try:
             patrimonio = self.view.input_patrimonio_devolucao.value.strip()
             pessoa_devolvendo = self.view.input_pessoa_devolucao.value.strip()
@@ -286,6 +314,24 @@ class Unbox_Controller:
             
             if not pessoa_devolvendo:
                 self.mostrar_snackbar("Informe quem está devolvendo!", ft.Colors.ORANGE)
+                return
+            
+            # VALIDAÇÃO: Verifica quem pegou emprestado
+            ultimo_responsavel = self.model.verificar_ultimo_emprestimo(patrimonio)
+            
+            if not ultimo_responsavel:
+                self.mostrar_snackbar(f"❌ Item '{patrimonio}' não está emprestado!", ft.Colors.RED)
+                return
+            
+            # Normaliza nomes para comparação (remove espaços extras, case insensitive)
+            pessoa_normalizada = pessoa_devolvendo.strip().lower()
+            responsavel_normalizado = ultimo_responsavel.strip().lower()
+            
+            if pessoa_normalizada != responsavel_normalizado:
+                self.mostrar_snackbar(
+                    f"❌ Apenas '{ultimo_responsavel}' pode devolver este item!", 
+                    ft.Colors.RED
+                )
                 return
             
             # Cria staff se não existir
@@ -459,4 +505,73 @@ Patrimonio: {patrimonio}
         )
         self.page.overlay.append(snack)
         snack.open = True
+        self.page.update()
+    
+    
+    def deletar_categoria(self, categoria_id, nome_categoria):
+        """Deleta uma categoria após confirmação"""
+        def confirmar_exclusao(e):
+            try:
+                self.model.deletar_categoria(categoria_id)
+                self.mostrar_snackbar(f"✅ Categoria '{nome_categoria}' deletada!", ft.Colors.GREEN)
+                # Limpa antes de recarregar
+                self.view.categorias_data_table.rows.clear()
+                self.carregar_categorias_tabela()
+                dialog.open = False
+                self.page.update()
+            except Exception as ex:
+                self.mostrar_snackbar(f"❌ {str(ex)}", ft.Colors.RED)
+                dialog.open = False
+                self.page.update()
+        
+        def cancelar(e):
+            dialog.open = False
+            self.page.update()
+        
+        dialog = ft.AlertDialog(
+            title=ft.Text("⚠️ Confirmar Exclusão"),
+            content=ft.Text(f"Deseja realmente deletar a categoria '{nome_categoria}'?\n\nEsta ação não pode ser desfeita!"),
+            actions=[
+                ft.TextButton("Cancelar", on_click=cancelar),
+                ft.TextButton("Deletar", on_click=confirmar_exclusao, style=ft.ButtonStyle(color=ft.Colors.RED)),
+            ],
+        )
+        
+        self.page.overlay.append(dialog)
+        dialog.open = True
+        self.page.update()
+    
+    
+    def deletar_item(self, patrimonio, nome_item):
+        """Deleta um item após confirmação"""
+        def confirmar_exclusao(e):
+            try:
+                self.model.deletar_item(patrimonio)
+                self.mostrar_snackbar(f"✅ Item '{nome_item}' deletado!", ft.Colors.GREEN)
+                # Limpa antes de recarregar
+                self.view.itens_data_table.rows.clear()
+                self.carregar_itens_tabela()
+                self.carregar_dashboard_stats()
+                dialog.open = False
+                self.page.update()
+            except Exception as ex:
+                self.mostrar_snackbar(f"❌ {str(ex)}", ft.Colors.RED)
+                dialog.open = False
+                self.page.update()
+        
+        def cancelar(e):
+            dialog.open = False
+            self.page.update()
+        
+        dialog = ft.AlertDialog(
+            title=ft.Text("⚠️ Confirmar Exclusão"),
+            content=ft.Text(f"Deseja realmente deletar o item:\n\n'{nome_item}' (Patrimônio: {patrimonio})?\n\nEsta ação não pode ser desfeita!"),
+            actions=[
+                ft.TextButton("Cancelar", on_click=cancelar),
+                ft.TextButton("Deletar", on_click=confirmar_exclusao, style=ft.ButtonStyle(color=ft.Colors.RED)),
+            ],
+        )
+        
+        self.page.overlay.append(dialog)
+        dialog.open = True
         self.page.update()

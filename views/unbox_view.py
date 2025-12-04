@@ -78,6 +78,7 @@ class TelaPrincipalView:
             columns=[
                 ft.DataColumn(ft.Text("ID", weight=ft.FontWeight.BOLD)),
                 ft.DataColumn(ft.Text("Nome", weight=ft.FontWeight.BOLD)),
+                ft.DataColumn(ft.Text("Ações", weight=ft.FontWeight.BOLD)),
             ],
             rows=[],
             border=ft.border.all(1, ft.Colors.GREY_300),
@@ -128,6 +129,7 @@ class TelaPrincipalView:
                 ft.DataColumn(ft.Text("Categoria", weight=ft.FontWeight.BOLD)),
                 ft.DataColumn(ft.Text("Qtd.", weight=ft.FontWeight.BOLD)),
                 ft.DataColumn(ft.Text("Status", weight=ft.FontWeight.BOLD)),
+                ft.DataColumn(ft.Text("Ações", weight=ft.FontWeight.BOLD)),
             ],
             rows=[],
             border=ft.border.all(1, ft.Colors.GREY_300),
