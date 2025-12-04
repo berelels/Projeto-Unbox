@@ -154,6 +154,15 @@ class TelaPrincipalView:
             hint_text="Item a devolver",
             prefix_icon=ft.Icons.NUMBERS
         )
+        
+        # NOVA IMPLEMENTAÇÃO: Campo para quem está devolvendo
+        self.input_pessoa_devolucao = ft.TextField(
+            label="Nome de quem está devolvendo",
+            width=350,
+            hint_text="Ex: Prof. Maria Santos",
+            prefix_icon=ft.Icons.PERSON
+        )
+        
         self.movimentacoes_data_table = ft.DataTable(
             columns=[
                 ft.DataColumn(ft.Text("ID", weight=ft.FontWeight.BOLD)),
@@ -318,7 +327,7 @@ class TelaPrincipalView:
         ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)
 
     def _layout_movimentacao(self):
-        """Layout de Movimentações - REUTILIZA componentes"""
+        """Layout de Movimentações - REUTILIZA componentes COM CAMPO DE DEVOLUÇÃO"""
         return ft.Column([
             ft.Text("🔄 Movimentações - Empréstimo e Devolução", size=30, weight=ft.FontWeight.BOLD),
             ft.Divider(height=20, thickness=2),
@@ -344,7 +353,7 @@ class TelaPrincipalView:
                         ], horizontal_alignment=ft.CrossAxisAlignment.START),
                         padding=20,
                         width=450,
-                        height=320,
+                        height=370,
                     ),
                     elevation=5
                 ),
@@ -358,6 +367,7 @@ class TelaPrincipalView:
                             ]),
                             ft.Divider(),
                             self.input_patrimonio_devolucao,
+                            self.input_pessoa_devolucao,  # NOVO CAMPO
                             ft.ElevatedButton(
                                 "Registrar Devolução",
                                 icon=ft.Icons.CHECK_CIRCLE,
@@ -368,7 +378,7 @@ class TelaPrincipalView:
                         ], horizontal_alignment=ft.CrossAxisAlignment.START),
                         padding=20,
                         width=450,
-                        height=320,
+                        height=370,
                     ),
                     elevation=5
                 ),

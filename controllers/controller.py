@@ -11,7 +11,6 @@ class Unbox_Controller:
         self.page = page
         self.model = Unbox_Model()
         self.view = None
-        # Define o fuso horário do Brasil
         self.timezone = pytz.timezone('America/Sao_Paulo')
  
     def registrar_view(self, view):
@@ -71,15 +70,12 @@ class Unbox_Controller:
             stats = self.model.get_dashboard_stats()
             print(f"[DEBUG] Stats carregados: {stats}")
             
-            # Atualiza low stock
             if hasattr(self.view, 'low_stock_count_text') and self.view.low_stock_count_text:
                 self.view.low_stock_count_text.value = str(stats.get('low_stock', 0))
             
-            # Atualiza total de itens
             if hasattr(self.view, 'total_items_text') and self.view.total_items_text:
                 self.view.total_items_text.value = str(stats.get('total_items', 0))
             
-            # Atualiza itens emprestados
             if hasattr(self.view, 'borrowed_items_text') and self.view.borrowed_items_text:
                 self.view.borrowed_items_text.value = str(stats.get('borrowed_items', 0))
             
@@ -130,7 +126,7 @@ class Unbox_Controller:
             print(f"Erro ao carregar categorias: {e}")
  
     def salvar_novo_item(self, e):
-        """Salva um novo item"""
+        """Salva um novo item - VALIDAÇÃO DE PATRIMÔNIO DUPLICADO"""
         try:
             patrimonio = self.view.patrimonio_input.value.strip()
             nome = self.view.nome_item_input.value.strip()
@@ -139,6 +135,11 @@ class Unbox_Controller:
             
             if not all([patrimonio, nome, categoria, quantidade]):
                 self.mostrar_snackbar("Preencha todos os campos!", ft.Colors.ORANGE)
+                return
+            
+            # VALIDAÇÃO: Verifica se já existe item com este patrimônio
+            if self.model.verifica_patrimonio_existe(patrimonio):
+                self.mostrar_snackbar(f"❌ Patrimônio '{patrimonio}' já cadastrado! Use outro número.", ft.Colors.RED)
                 return
             
             # Cria local padrão se não existir
@@ -157,7 +158,7 @@ class Unbox_Controller:
             self.model.create_staff("Sistema", "Sistema")
             self.model.register_movement(patrimonio, "IN", int(quantidade), "Sistema")
             
-            self.mostrar_snackbar(f"Item '{nome}' cadastrado!", ft.Colors.GREEN)
+            self.mostrar_snackbar(f"✅ Item '{nome}' cadastrado com sucesso!", ft.Colors.GREEN)
             self.limpar_campos_item()
             self.carregar_itens_tabela()
             self.carregar_dashboard_stats()
@@ -175,7 +176,7 @@ class Unbox_Controller:
             self.page.update()
  
     def carregar_itens_tabela(self):
-        """Carrega itens na tabela"""
+        """Carrega itens na tabela - COM ALERTA DE ESTOQUE BAIXO"""
         try:
             if not self.view or not hasattr(self.view, 'itens_data_table'):
                 return
@@ -190,9 +191,16 @@ class Unbox_Controller:
                 categorias = self.model.obter_categorias()
                 nome_cat = next((c[1] for c in categorias if c[0] == cat_id), "N/A")
                 
-                # Define status
-                status_text = "Disponível" if qtd > 0 else "Sem estoque"
-                status_color = ft.Colors.GREEN if qtd > 0 else ft.Colors.RED
+                # Define status - IMPLEMENTAÇÃO DO ALERTA DE ESTOQUE BAIXO
+                if qtd <= min_stock and qtd > 0:
+                    status_text = "⚠️ Estoque Baixo"
+                    status_color = ft.Colors.ORANGE
+                elif qtd > min_stock:
+                    status_text = "Disponível"
+                    status_color = ft.Colors.GREEN
+                else:
+                    status_text = "Sem estoque"
+                    status_color = ft.Colors.RED
                 
                 row = ft.DataRow(cells=[
                     ft.DataCell(ft.Text(serial)),
@@ -252,7 +260,7 @@ class Unbox_Controller:
             # Registra saída
             self.model.register_movement(item_selecionado, "OUT", 1, pessoa)
             
-            self.mostrar_snackbar(f"Empréstimo registrado para {pessoa}!", ft.Colors.GREEN)
+            self.mostrar_snackbar(f"✅ Empréstimo registrado para {pessoa}!", ft.Colors.GREEN)
             self.gerar_recibo_pdf(item_selecionado, pessoa)
             
             # Limpa campos
@@ -267,19 +275,28 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Erro ao realizar empréstimo: {ex}", ft.Colors.RED)
  
     def registrar_devolucao(self, e):
-        """Registra devolução de item"""
+        """Registra devolução de item - COM INFORMAÇÃO DE QUEM ESTÁ DEVOLVENDO"""
         try:
             patrimonio = self.view.input_patrimonio_devolucao.value.strip()
+            pessoa_devolvendo = self.view.input_pessoa_devolucao.value.strip()
             
             if not patrimonio:
                 self.mostrar_snackbar("Informe o patrimônio!", ft.Colors.ORANGE)
                 return
             
-            # Registra entrada (sistema)
-            self.model.register_movement(patrimonio, "IN", 1, "Sistema")
+            if not pessoa_devolvendo:
+                self.mostrar_snackbar("Informe quem está devolvendo!", ft.Colors.ORANGE)
+                return
             
-            self.mostrar_snackbar(f"Devolução registrada: {patrimonio}", ft.Colors.BLUE)
+            # Cria staff se não existir
+            self.model.create_staff(pessoa_devolvendo, "Professor")
+            
+            # Registra entrada
+            self.model.register_movement(patrimonio, "IN", 1, pessoa_devolvendo)
+            
+            self.mostrar_snackbar(f"✅ Devolução registrada: {patrimonio} por {pessoa_devolvendo}", ft.Colors.BLUE)
             self.view.input_patrimonio_devolucao.value = ""
+            self.view.input_pessoa_devolucao.value = ""
             
             self.carregar_itens_disponiveis()
             self.carregar_movimentacoes_tabela()
@@ -289,12 +306,9 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Erro ao registrar devolução: {ex}", ft.Colors.RED)
  
     def formatar_timestamp_local(self, timestamp_str):
-        """
-        Converte timestamp UTC para horário local de São Paulo
-        """
+        """Converte timestamp UTC para horário local de São Paulo"""
         try:
             if isinstance(timestamp_str, str):
-                # Tenta vários formatos
                 formatos = [
                     "%Y-%m-%d %H:%M:%S",
                     "%Y-%m-%d %H:%M:%S.%f",
@@ -315,15 +329,12 @@ class Unbox_Controller:
             else:
                 data_obj = timestamp_str
             
-            # Define como UTC
             utc_tz = pytz.UTC
             if data_obj.tzinfo is None:
                 data_obj = utc_tz.localize(data_obj)
             
-            # Converte para horário de São Paulo
             local_dt = data_obj.astimezone(self.timezone)
             
-            # Retorna formatado
             return local_dt.strftime("%d/%m/%Y %H:%M:%S")
             
         except Exception as e:
@@ -338,17 +349,14 @@ class Unbox_Controller:
                 
             self.view.movimentacoes_data_table.rows.clear()
             
-            # Busca movimentações recentes
             movimentos = self.model.get_recent_movements(50)
             
             for mov in movimentos:
                 mov_id, inv_id, staff_id, tipo, qtd, timestamp, item_nome, item_serial, staff_nome = mov
                 
-                # Define cor baseado no tipo
                 tipo_text = "Saída" if tipo == "OUT" else "Entrada"
                 tipo_color = ft.Colors.RED if tipo == "OUT" else ft.Colors.GREEN
                 
-                # Formata data usando pytz
                 data_formatada = self.formatar_timestamp_local(timestamp)
                 
                 row = ft.DataRow(cells=[
@@ -374,8 +382,16 @@ class Unbox_Controller:
             traceback.print_exc()
  
     def gerar_recibo_pdf(self, patrimonio, pessoa):
-        """Gera recibo em PDF"""
+        """Gera recibo em PDF - STREAMLIT PARA CRIAR GRÁFICO E NOME EM NUMÉRICO"""
         try:
+            # Busca informações do item
+            item_info = self.model.buscar_item_por_patrimonio(patrimonio)
+            if not item_info:
+                print(f"Item {patrimonio} não encontrado")
+                return
+            
+            nome_item = item_info[1]  # nome do item
+            
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
@@ -386,10 +402,12 @@ class Unbox_Controller:
             
             pdf.set_font("Arial", size=12)
             
-            # Data/hora local usando pytz
             agora_utc = datetime.now(pytz.UTC)
             agora_local = agora_utc.astimezone(self.timezone)
             data_formatada = agora_local.strftime("%d/%m/%Y %H:%M:%S")
+            
+            # IMPLEMENTAÇÃO: Nome do responsável em formato numérico (ex: 001)
+            codigo_pessoa = f"{abs(hash(pessoa)) % 1000:03d}"
             
             texto = f"""
 Declaro que recebi o item abaixo listado em perfeitas condicoes de uso.
@@ -399,7 +417,9 @@ Dados do Emprestimo:
 ------------------------------------------------
 Data: {data_formatada}
 Responsavel: {pessoa}
-Item Patrimonio: {patrimonio}
+Codigo Responsavel: {codigo_pessoa}
+Item: {nome_item}
+Patrimonio: {patrimonio}
 ------------------------------------------------
             """
             pdf.multi_cell(0, 10, txt=texto)
@@ -408,7 +428,7 @@ Item Patrimonio: {patrimonio}
             pdf.cell(200, 10, txt="_" * 50, ln=1, align='C')
             pdf.cell(200, 10, txt="Assinatura do Responsavel", ln=1, align='C')
             
-            nome_arquivo = f"recibo_{patrimonio}.pdf"
+            nome_arquivo = f"recibo_{patrimonio}_{codigo_pessoa}.pdf"
             pdf.output(nome_arquivo)
             
             os.startfile(nome_arquivo)
