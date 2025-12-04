@@ -267,6 +267,7 @@ class Unbox_Model:
             return []
         
         
+        
     def obter_categorias(self):
         """Obtém todas as categorias do banco de dados"""
         try:
@@ -276,6 +277,7 @@ class Unbox_Model:
         except Exception as e:
             print(f"[X] Erro ao obter categorias: {e}")
             return []
+    
     
     
     def get_recent_movements(self, limit=50):
@@ -308,6 +310,7 @@ class Unbox_Model:
             return []
     
     
+    
     def verifica_patrimonio_existe(self, serial_number):
         """
         NOVA IMPLEMENTAÇÃO: Verifica se já existe um item com este número de patrimônio.
@@ -326,6 +329,7 @@ class Unbox_Model:
         except Exception as e:
             print(f"[X] Erro ao verificar patrimônio: {e}")
             return False
+    
     
     
     def buscar_item_por_patrimonio(self, serial_number):
@@ -349,6 +353,7 @@ class Unbox_Model:
         except Exception as e:
             print(f"[X] Erro ao buscar item: {e}")
             return None
+    
     
     
     def verificar_ultimo_emprestimo(self, serial_number):
@@ -387,6 +392,7 @@ class Unbox_Model:
             return None
     
     
+    
     def deletar_categoria(self, categoria_id):
         """
         NOVA IMPLEMENTAÇÃO: Deleta uma categoria.
@@ -414,6 +420,7 @@ class Unbox_Model:
             self.conn.rollback()
             print(f"[X] Erro ao deletar categoria: {e}")
             raise
+    
     
     
     def deletar_item(self, serial_number):
@@ -452,9 +459,12 @@ class Unbox_Model:
             raise
 
 
+
     def _hash_senha(self, senha):
         """Gera hash seguro da senha"""
         return hashlib.sha256(senha.encode()).hexdigest()
+    
+    
     
     def _criar_admin_padrao(self):
         """Cria usuário admin padrão se não existir nenhum usuário"""
@@ -467,6 +477,8 @@ class Unbox_Model:
             })
             self.salvar_dados()
             print("[INFO] Usuário admin padrão criado (usuario: admin, senha: admin123)")
+    
+    
     
     def carregar_dados(self):
         """Carrega usuários e logs do JSON"""
@@ -492,6 +504,8 @@ class Unbox_Model:
             self.usuarios = []
             self.logs_criacao_exclusao = []
     
+    
+    
     def salvar_dados(self):
         """Salva usuários e logs no JSON"""
         try:
@@ -507,6 +521,8 @@ class Unbox_Model:
             
         except Exception as e:
             print(f"[ERRO] Erro ao salvar usuários: {e}")
+    
+    
     
     def validar_login(self, usuario, senha):
         """
@@ -524,6 +540,8 @@ class Unbox_Model:
                 return self.usuario_logado
         
         return None
+    
+    
     
     def criar_usuario(self, nome, senha, tipo, criado_por):
         """
@@ -573,6 +591,8 @@ class Unbox_Model:
             print(f"[ERRO] Erro ao criar usuário: {e}")
             raise
     
+    
+    
     def excluir_usuario(self, nome, excluido_por):
         """
         Exclui um usuário
@@ -614,6 +634,8 @@ class Unbox_Model:
             print(f"[ERRO] Erro ao excluir usuário: {e}")
             raise
     
+    
+    
     def obter_usuarios(self):
         """Retorna lista de usuários (sem senhas)"""
         usuarios_safe = []
@@ -623,9 +645,13 @@ class Unbox_Model:
             usuarios_safe.append(user_copy)
         return usuarios_safe
     
+    
+    
     def obter_logs(self, limit=50):
         """Retorna logs de criação/exclusão"""
         return self.logs_criacao_exclusao[-limit:][::-1]  # Últimos N, ordem reversa
+    
+    
     
     def logout(self):
         """Faz logout do usuário atual"""
