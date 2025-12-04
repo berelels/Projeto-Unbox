@@ -1,6 +1,7 @@
 import flet as ft
 from models.unbox_model import Unbox_Model
 from datetime import datetime
+import pytz
 import os
 from fpdf import FPDF
 import pandas as pd
@@ -10,6 +11,8 @@ class Unbox_Controller:
         self.page = page
         self.model = Unbox_Model()
         self.view = None
+        # Define o fuso horário do Brasil
+        self.timezone = pytz.timezone('America/Sao_Paulo')
  
     def registrar_view(self, view):
         """Registra a view no controller"""
@@ -66,7 +69,7 @@ class Unbox_Controller:
                 return
                 
             stats = self.model.get_dashboard_stats()
-            print(f"[DEBUG] Stats carregados: {stats}")  # Debug
+            print(f"[DEBUG] Stats carregados: {stats}")
             
             # Atualiza low stock
             if hasattr(self.view, 'low_stock_count_text') and self.view.low_stock_count_text:
@@ -81,7 +84,7 @@ class Unbox_Controller:
                 self.view.borrowed_items_text.value = str(stats.get('borrowed_items', 0))
             
             self.page.update()
-            print("[DEBUG] Dashboard atualizado com sucesso!")  # Debug
+            print("[DEBUG] Dashboard atualizado com sucesso!")
             
         except Exception as e:
             print(f"[ERRO] Erro ao carregar dashboard: {e}")
@@ -157,7 +160,7 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Item '{nome}' cadastrado!", ft.Colors.GREEN)
             self.limpar_campos_item()
             self.carregar_itens_tabela()
-            self.carregar_dashboard_stats()  # Atualiza dashboard
+            self.carregar_dashboard_stats()
             
         except Exception as ex:
             self.mostrar_snackbar(f"Erro ao salvar item: {ex}", ft.Colors.RED)
@@ -280,10 +283,52 @@ class Unbox_Controller:
             
             self.carregar_itens_disponiveis()
             self.carregar_movimentacoes_tabela()
-            self.carregar_dashboard_stats()  # Atualiza dashboard
+            self.carregar_dashboard_stats()
             
         except Exception as ex:
             self.mostrar_snackbar(f"Erro ao registrar devolução: {ex}", ft.Colors.RED)
+ 
+    def formatar_timestamp_local(self, timestamp_str):
+        """
+        Converte timestamp UTC para horário local de São Paulo
+        """
+        try:
+            if isinstance(timestamp_str, str):
+                # Tenta vários formatos
+                formatos = [
+                    "%Y-%m-%d %H:%M:%S",
+                    "%Y-%m-%d %H:%M:%S.%f",
+                    "%Y-%m-%dT%H:%M:%S",
+                    "%Y-%m-%dT%H:%M:%S.%f"
+                ]
+                
+                data_obj = None
+                for formato in formatos:
+                    try:
+                        data_obj = datetime.strptime(timestamp_str, formato)
+                        break
+                    except ValueError:
+                        continue
+                
+                if data_obj is None:
+                    return timestamp_str
+            else:
+                data_obj = timestamp_str
+            
+            # Define como UTC
+            utc_tz = pytz.UTC
+            if data_obj.tzinfo is None:
+                data_obj = utc_tz.localize(data_obj)
+            
+            # Converte para horário de São Paulo
+            local_dt = data_obj.astimezone(self.timezone)
+            
+            # Retorna formatado
+            return local_dt.strftime("%d/%m/%Y %H:%M:%S")
+            
+        except Exception as e:
+            print(f"Erro ao formatar timestamp: {e}")
+            return timestamp_str
  
     def carregar_movimentacoes_tabela(self):
         """Carrega movimentações na tabela"""
@@ -303,13 +348,8 @@ class Unbox_Controller:
                 tipo_text = "Saída" if tipo == "OUT" else "Entrada"
                 tipo_color = ft.Colors.RED if tipo == "OUT" else ft.Colors.GREEN
                 
-                # Formata data
-                try:
-                    from datetime import datetime
-                    data_obj = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-                    data_formatada = data_obj.strftime("%d/%m/%Y %H:%M")
-                except:
-                    data_formatada = timestamp
+                # Formata data usando pytz
+                data_formatada = self.formatar_timestamp_local(timestamp)
                 
                 row = ft.DataRow(cells=[
                     ft.DataCell(ft.Text(str(mov_id))),
@@ -345,13 +385,19 @@ class Unbox_Controller:
             pdf.ln(10)
             
             pdf.set_font("Arial", size=12)
+            
+            # Data/hora local usando pytz
+            agora_utc = datetime.now(pytz.UTC)
+            agora_local = agora_utc.astimezone(self.timezone)
+            data_formatada = agora_local.strftime("%d/%m/%Y %H:%M:%S")
+            
             texto = f"""
 Declaro que recebi o item abaixo listado em perfeitas condicoes de uso.
 Comprometo-me a devolve-lo quando solicitado.
 
 Dados do Emprestimo:
 ------------------------------------------------
-Data: {datetime.now().strftime("%d/%m/%Y %H:%M")}
+Data: {data_formatada}
 Responsavel: {pessoa}
 Item Patrimonio: {patrimonio}
 ------------------------------------------------
