@@ -7,11 +7,12 @@ from fpdf import FPDF
 import pandas as pd
  
 class Unbox_Controller:
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, usuario_logado=None):
         self.page = page
         self.model = Unbox_Model()
         self.view = None
         self.timezone = pytz.timezone('America/Sao_Paulo')
+        self.usuario_logado = usuario_logado
  
     def registrar_view(self, view):
         """Registra a view no controller"""
@@ -62,6 +63,15 @@ class Unbox_Controller:
             self.view.content_area.content = self.view._layout_movimentacao()
             self.carregar_itens_disponiveis()
             self.carregar_movimentacoes_tabela()
+        elif index == 4:  # Usuários (apenas para DIRETOR)
+            if self.usuario_logado and self.usuario_logado.get("tipo") == "DIRETOR":
+                from models.unbox_model import Unbox_Model
+                from views.unbox_view import TelaPrincipalView
+                
+                user_model = Unbox_Model()
+                users_view = TelaPrincipalView(self.page, user_model, self.usuario_logado)
+                self.view.content_area.content = users_view.construir()
+                users_view.carregar_usuarios()
         
         self.page.update()
  
