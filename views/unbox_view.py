@@ -409,3 +409,43 @@ class TelaPrincipalView:
                 padding=10,
             )
         ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)
+    
+    
+    def _layout_usuarios(self):
+        self.usuario_input = ft.TextField(
+            label="Usuário",
+            width=300,
+            prefix_icon=ft.Icons.PERSON,
+            autofocus=True
+        )
+        
+        self.senha_input = ft.TextField(
+            label="Senha",
+            width=300,
+            prefix_icon=ft.Icons.LOCK,
+            password=True,
+            can_reveal_password=True
+        )
+        
+        self.tipo_input = ft.Dropdown(
+            options=[
+                ft.dropdown.Option("DIRETOR"),
+                ft.dropdown.Option("PROFESSOR")
+            ],
+            width=300,
+            prefix_icon=ft.Icons.BADGE,
+        )
+        
+        self.btn_cadastrar = ft.ElevatedButton(
+            text="Cadastrar Usuário",
+            width=300,
+            on_click=self.salvar_usuario_click
+        )
+        
+        self.mensagem_erro = ft.Text(
+            "",
+            color=ft.Colors.RED,
+            size=14,
+            visible=False
+        )
+    
