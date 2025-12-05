@@ -82,29 +82,31 @@ class LoginView:
                         shape=ft.RoundedRectangleBorder(radius=8)
                     )
                 ),
+
                 
-                ft.Divider(height=20),
+                # ft.Divider(height=20),  <-- Comentei o divisor também para melhorar a estética
                 
                 # Info padrão
-                ft.Container(
-                    content=ft.Column([
-                        ft.Text(
-                            "Usuário padrão:",
-                            size=12,
-                            color=ft.Colors.GREY_600
-                        ),
-                        ft.Text(
-                            "Usuário: admin | Senha: admin123",
-                            size=12,
-                            weight=ft.FontWeight.BOLD,
-                            color=ft.Colors.GREY_700
-                        ),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    bgcolor=ft.Colors.BLUE_50,
-                    padding=10,
-                    border_radius=8,
-                    width=300
-                ),
+                # ft.Container(
+                #     content=ft.Column([
+                #         ft.Text(
+                #             "Usuário padrão:",
+                #             size=12,
+                #             color=ft.Colors.GREY_600
+                #         ),
+                #         ft.Text(
+                #             "Usuário: admin | Senha: admin123",
+                #             size=12,
+                #             weight=ft.FontWeight.BOLD,
+                #             color=ft.Colors.GREY_700
+                #         ),
+                #     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                #     bgcolor=ft.Colors.BLUE_50,
+                #     padding=10,
+                #     border_radius=8,
+                #     width=300
+                # ),
+                
                 
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15),
             width=400,
@@ -117,6 +119,7 @@ class LoginView:
                 color=ft.Colors.BLUE_GREY_100,
             )
         )
+        
         
         # Container principal com fundo
         main_container = ft.Container(

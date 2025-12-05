@@ -138,6 +138,40 @@ class TelaPrincipalView:
         )
         
         # Componentes de Usuários
+        self.usuario_input = ft.TextField(
+            label="Usuário",
+            width=300,
+            prefix_icon=ft.Icons.PERSON,
+            autofocus=True
+        )
+        
+        self.senha_input = ft.TextField(
+            label="Senha",
+            width=300,
+            prefix_icon=ft.Icons.LOCK,
+            password=True,
+            can_reveal_password=True
+        )
+        
+        self.tipo_input = ft.Dropdown(
+            options=[
+                ft.dropdown.Option("ADMIN"),
+                ft.dropdown.Option("DIRETOR"),
+                ft.dropdown.Option("COORDENADOR"),
+                ft.dropdown.Option("PROFESSOR"),
+            ],
+            width=300,
+            label="Tipo de Usuário",
+            prefix_icon=ft.Icons.BADGE,
+        )
+        
+        self.mensagem_erro = ft.Text(
+            "",
+            color=ft.Colors.RED,
+            size=14,
+            visible=False
+        )
+        
         self.usuarios_data_table = ft.DataTable(
             columns=[
                 ft.DataColumn(ft.Text("Usuário", weight=ft.FontWeight.BOLD)),
@@ -171,7 +205,6 @@ class TelaPrincipalView:
             prefix_icon=ft.Icons.NUMBERS
         )
         
-        # NOVA IMPLEMENTAÇÃO: Campo para quem está devolvendo
         self.input_pessoa_devolucao = ft.TextField(
             label="Nome de quem está devolvendo",
             width=350,
@@ -225,7 +258,7 @@ class TelaPrincipalView:
             ),
         ]
         
-        # Adiciona aba de Usuários apenas para DIRETOR
+        # Adiciona aba de Usuários apenas para ADMIN
         if self.usuario_logado and self.usuario_logado.get("tipo") == "ADMIN":
             destinations.append(
                 ft.NavigationRailDestination(
@@ -357,7 +390,7 @@ class TelaPrincipalView:
     def _layout_movimentacao(self):
         """Layout de Movimentações - REUTILIZA componentes COM CAMPO DE DEVOLUÇÃO"""
         return ft.Column([
-            ft.Text("🔄 Movimentações - Empréstimo e Devolução", size=30, weight=ft.FontWeight.BOLD),
+            ft.Text("📤 Movimentações - Empréstimo e Devolução", size=30, weight=ft.FontWeight.BOLD),
             ft.Divider(height=20, thickness=2),
 
             ft.Row([
@@ -425,43 +458,45 @@ class TelaPrincipalView:
     
     
     def _layout_usuarios(self):
-        self.usuario_input = ft.TextField(
-            label="Usuário",
-            width=300,
-            prefix_icon=ft.Icons.PERSON,
-            autofocus=True
-        )
-        
-        self.senha_input = ft.TextField(
-            label="Senha",
-            width=300,
-            prefix_icon=ft.Icons.LOCK,
-            password=True,
-            can_reveal_password=True
-        )
-        
-        self.tipo_input = ft.Dropdown(
-            options=[
-                ft.dropdown.Option("ADMIN"),
-                ft.dropdown.Option("DIRETOR"),
-                ft.dropdown.Option("COORDENADOR"),
-                ft.dropdown.Option("PROFESSOR"),
-            ],
-            width=300,
-            label="Tipo de Usuário",
-            prefix_icon=ft.Icons.BADGE,
-        )
-        
-        self.btn_cadastrar = ft.ElevatedButton(
-            text="Cadastrar Usuário",
-            width=300,
-            on_click=self.salvar_usuario_click
-        )
-        
-        self.mensagem_erro = ft.Text(
-            "",
-            color=ft.Colors.RED,
-            size=14,
-            visible=False
-        )
+        """Layout de Gerenciamento de Usuários - COMPLETO"""
+        return ft.Column([
+            ft.Text("👥 Gerenciamento de Usuários", size=30, weight=ft.FontWeight.BOLD),
+            ft.Divider(height=20, thickness=2),
+            
+            ft.Card(
+                content=ft.Container(
+                    content=ft.Column([
+                        ft.Text("Novo Usuário", size=18, weight=ft.FontWeight.W_600),
+                        ft.Divider(height=10),
+                        self.usuario_input,
+                        self.senha_input,
+                        self.tipo_input,
+                        ft.ElevatedButton(
+                            text="Cadastrar Usuário",
+                            width=300,
+                            on_click=self.salvar_usuario_click,
+                            bgcolor=ft.Colors.BLUE_700,
+                            color=ft.Colors.WHITE
+                        ),
+                        self.mensagem_erro,
+                    ], horizontal_alignment=ft.CrossAxisAlignment.START),
+                    padding=20,
+                ),
+                elevation=3
+            ),
+            
+            ft.Divider(height=20),
+            
+            ft.Text("Usuários Cadastrados:", size=18, weight=ft.FontWeight.W_600),
+            ft.Container(
+                content=self.usuarios_data_table,
+                border=ft.border.all(1, ft.Colors.GREY_300),
+                border_radius=10,
+                padding=10,
+            )
+        ], expand=True, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START)
     
+    
+    def salvar_usuario_click(self, e):
+        """Callback do botão de salvar usuário"""
+        self.controller.salvar_novo_usuario(e)

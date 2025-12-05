@@ -14,6 +14,8 @@ class Unbox_Controller:
         self.view = None
         self.timezone = pytz.timezone('America/Sao_Paulo')
         self.usuario_logado = usuario_logado
+        
+        print(f"[DEBUG] Controller iniciado com usuário: {self.usuario_logado}")
  
     def registrar_view(self, view):
         """Registra a view no controller"""
@@ -46,18 +48,20 @@ class Unbox_Controller:
             
         index = int(e.data) if hasattr(e, 'data') else e
         
+        print(f"[DEBUG] Navegação mudou para índice: {index}")
+        print(f"[DEBUG] Usuário logado: {self.usuario_logado}")
+        print(f"[DEBUG] Tipo do usuário: {self.usuario_logado.get('tipo') if self.usuario_logado else 'NENHUM'}")
+        
         if index == 0:  # Dashboard
             self.view.content_area.content = self.view._layout_dashboard()
             self.carregar_dashboard_stats()
         elif index == 1:  # Categorias
             self.view.content_area.content = self.view._layout_cadastro_categoria()
-            # IMPORTANTE: Limpa a tabela antes de carregar
             self.view.categorias_data_table.rows.clear()
             self.carregar_categorias_tabela()
         elif index == 2:  # Itens
             self.view.content_area.content = self.view._layout_cadastro_item()
             self.preencher_categorias()
-            # IMPORTANTE: Limpa a tabela antes de carregar
             self.view.itens_data_table.rows.clear()
             self.carregar_itens_tabela()
         elif index == 3:  # Movimentações
@@ -65,11 +69,19 @@ class Unbox_Controller:
             self.carregar_itens_disponiveis()
             self.carregar_movimentacoes_tabela()
         elif index == 4:  # Usuários (apenas para ADMIN)
-            if self.usuario_logado and self.usuario_logado.get("tipo") == "ADMIN":                
+            print(f"[DEBUG] Tentando acessar aba de Usuários...")
+            
+            if self.usuario_logado and self.usuario_logado.get("tipo") == "ADMIN":
+                print("[DEBUG] ✅ Acesso concedido! Carregando tela de usuários...")
                 self.view.content_area.content = self.view._layout_usuarios()
                 self.carregar_usuarios_tabela()
             else:
+                print(f"[DEBUG] ❌ Acesso negado! Tipo: {self.usuario_logado.get('tipo') if self.usuario_logado else 'NENHUM'}")
                 self.mostrar_snackbar("❌ Acesso negado! Apenas ADMIN pode gerenciar usuários.", ft.Colors.RED)
+                # Volta para o Dashboard
+                self.view.navigation_rail.selected_index = 0
+                self.view.content_area.content = self.view._layout_dashboard()
+                self.carregar_dashboard_stats()
         
         self.page.update()
 
@@ -111,6 +123,8 @@ class Unbox_Controller:
             self.view.usuarios_data_table.rows.clear()
             usuarios = self.model.obter_usuarios()
             
+            print(f"[DEBUG] Carregando {len(usuarios)} usuários na tabela...")
+            
             for user in usuarios:
                 nome = user["usuario"]
                 tipo = user["tipo"]
@@ -138,9 +152,12 @@ class Unbox_Controller:
                 self.view.usuarios_data_table.rows.append(row)
             
             self.page.update()
+            print("[DEBUG] ✅ Tabela de usuários atualizada!")
             
         except Exception as e:
-            print(f"Erro ao carregar usuários: {e}")
+            print(f"[ERRO] Erro ao carregar usuários: {e}")
+            import traceback
+            traceback.print_exc()
 
     def deletar_usuario(self, nome_usuario):
         """Deleta um usuário após confirmação"""
@@ -180,7 +197,6 @@ class Unbox_Controller:
                 return
                 
             stats = self.model.get_dashboard_stats()
-            print(f"[DEBUG] Stats carregados: {stats}")
             
             if hasattr(self.view, 'low_stock_count_text') and self.view.low_stock_count_text:
                 self.view.low_stock_count_text.value = str(stats.get('low_stock', 0))
@@ -192,7 +208,6 @@ class Unbox_Controller:
                 self.view.borrowed_items_text.value = str(stats.get('borrowed_items', 0))
             
             self.page.update()
-            print("[DEBUG] Dashboard atualizado com sucesso!")
             
         except Exception as e:
             print(f"[ERRO] Erro ao carregar dashboard: {e}")
@@ -212,7 +227,6 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Categoria '{nome}' cadastrada!", ft.Colors.GREEN)
             self.view.nome_categoria_input.value = ""
             
-            # Limpa antes de recarregar
             self.view.categorias_data_table.rows.clear()
             self.carregar_categorias_tabela()
             
@@ -220,7 +234,7 @@ class Unbox_Controller:
             self.mostrar_snackbar(f"Erro ao salvar categoria: {ex}", ft.Colors.RED)
  
     def carregar_categorias_tabela(self):
-        """Carrega categorias na tabela - COM BOTÃO DE DELETAR"""
+        """Carrega categorias na tabela"""
         try:
             if not self.view or not hasattr(self.view, 'categorias_data_table'):
                 return
@@ -229,7 +243,6 @@ class Unbox_Controller:
             categorias = self.model.obter_categorias()
             
             for id_cat, nome_cat in categorias:
-                # Cria botão de deletar
                 btn_deletar = ft.IconButton(
                     icon=ft.Icons.DELETE,
                     icon_color=ft.Colors.RED,
@@ -250,7 +263,7 @@ class Unbox_Controller:
             print(f"Erro ao carregar categorias: {e}")
  
     def salvar_novo_item(self, e):
-        """Salva um novo item - VALIDAÇÃO DE PATRIMÔNIO DUPLICADO"""
+        """Salva um novo item"""
         try:
             patrimonio = self.view.patrimonio_input.value.strip()
             nome = self.view.nome_item_input.value.strip()
@@ -261,15 +274,11 @@ class Unbox_Controller:
                 self.mostrar_snackbar("Preencha todos os campos!", ft.Colors.ORANGE)
                 return
             
-            # VALIDAÇÃO: Verifica se já existe item com este patrimônio
             if self.model.verifica_patrimonio_existe(patrimonio):
-                self.mostrar_snackbar(f"❌ Patrimônio '{patrimonio}' já cadastrado! Use outro número.", ft.Colors.RED)
+                self.mostrar_snackbar(f"❌ Patrimônio '{patrimonio}' já cadastrado!", ft.Colors.RED)
                 return
             
-            # Cria local padrão se não existir
             self.model.create_location("Estoque Principal", "Principal")
-            
-            # Cria o item
             self.model.create_item(
                 name=nome,
                 serial_number=patrimonio,
@@ -278,20 +287,18 @@ class Unbox_Controller:
                 min_stock=1
             )
             
-            # Adiciona quantidade inicial
             self.model.create_staff("Sistema", "Sistema")
             self.model.register_movement(patrimonio, "IN", int(quantidade), "Sistema")
             
-            self.mostrar_snackbar(f"✅ Item '{nome}' cadastrado com sucesso!", ft.Colors.GREEN)
+            self.mostrar_snackbar(f"✅ Item '{nome}' cadastrado!", ft.Colors.GREEN)
             self.limpar_campos_item()
             
-            # Limpa antes de recarregar
             self.view.itens_data_table.rows.clear()
             self.carregar_itens_tabela()
             self.carregar_dashboard_stats()
             
         except Exception as ex:
-            self.mostrar_snackbar(f"Erro ao salvar item: {ex}", ft.Colors.RED)
+            self.mostrar_snackbar(f"Erro: {ex}", ft.Colors.RED)
  
     def limpar_campos_item(self):
         """Limpa os campos do formulário de item"""
@@ -303,7 +310,7 @@ class Unbox_Controller:
             self.page.update()
  
     def carregar_itens_tabela(self):
-        """Carrega itens na tabela - COM ALERTA DE ESTOQUE BAIXO E BOTÃO DELETAR"""
+        """Carrega itens na tabela"""
         try:
             if not self.view or not hasattr(self.view, 'itens_data_table'):
                 return
@@ -314,11 +321,9 @@ class Unbox_Controller:
             for item in itens:
                 id_item, nome, serial, cat_id, loc_id, qtd, min_stock = item
                 
-                # Busca nome da categoria
                 categorias = self.model.obter_categorias()
                 nome_cat = next((c[1] for c in categorias if c[0] == cat_id), "N/A")
                 
-                # Define status - IMPLEMENTAÇÃO DO ALERTA DE ESTOQUE BAIXO
                 if qtd <= min_stock and qtd > 0:
                     status_text = "⚠️ Estoque Baixo"
                     status_color = ft.Colors.ORANGE
@@ -329,7 +334,6 @@ class Unbox_Controller:
                     status_text = "Sem estoque"
                     status_color = ft.Colors.RED
                 
-                # Botão de deletar
                 btn_deletar = ft.IconButton(
                     icon=ft.Icons.DELETE,
                     icon_color=ft.Colors.RED,
@@ -358,7 +362,7 @@ class Unbox_Controller:
             print(f"Erro ao carregar itens: {e}")
  
     def carregar_itens_disponiveis(self):
-        """Carrega itens disponíveis no dropdown de empréstimo"""
+        """Carrega itens disponíveis no dropdown"""
         try:
             if not self.view or not hasattr(self.view, 'item_emprestimo_dropdown'):
                 return
@@ -390,16 +394,12 @@ class Unbox_Controller:
                 self.mostrar_snackbar("Selecione um item e informe o responsável!", ft.Colors.ORANGE)
                 return
             
-            # Cria staff se não existir
             self.model.create_staff(pessoa, "Professor")
-            
-            # Registra saída
             self.model.register_movement(item_selecionado, "OUT", 1, pessoa)
             
             self.mostrar_snackbar(f"✅ Empréstimo registrado para {pessoa}!", ft.Colors.GREEN)
             self.gerar_recibo_pdf(item_selecionado, pessoa)
             
-            # Limpa campos
             self.view.item_emprestimo_dropdown.value = None
             self.view.input_pessoa_emprestimo.value = ""
             
@@ -408,47 +408,32 @@ class Unbox_Controller:
             self.carregar_dashboard_stats()
             
         except Exception as ex:
-            self.mostrar_snackbar(f"Erro ao realizar empréstimo: {ex}", ft.Colors.RED)
+            self.mostrar_snackbar(f"Erro: {ex}", ft.Colors.RED)
  
     def registrar_devolucao(self, e):
-        """Registra devolução de item - VALIDAÇÃO: SÓ QUEM PEGOU PODE DEVOLVER"""
+        """Registra devolução de item"""
         try:
             patrimonio = self.view.input_patrimonio_devolucao.value.strip()
             pessoa_devolvendo = self.view.input_pessoa_devolucao.value.strip()
             
-            if not patrimonio:
-                self.mostrar_snackbar("Informe o patrimônio!", ft.Colors.ORANGE)
+            if not patrimonio or not pessoa_devolvendo:
+                self.mostrar_snackbar("Preencha todos os campos!", ft.Colors.ORANGE)
                 return
             
-            if not pessoa_devolvendo:
-                self.mostrar_snackbar("Informe quem está devolvendo!", ft.Colors.ORANGE)
-                return
-            
-            # VALIDAÇÃO: Verifica quem pegou emprestado
             ultimo_responsavel = self.model.verificar_ultimo_emprestimo(patrimonio)
             
             if not ultimo_responsavel:
                 self.mostrar_snackbar(f"❌ Item '{patrimonio}' não está emprestado!", ft.Colors.RED)
                 return
             
-            # Normaliza nomes para comparação (remove espaços extras, case insensitive)
-            pessoa_normalizada = pessoa_devolvendo.strip().lower()
-            responsavel_normalizado = ultimo_responsavel.strip().lower()
-            
-            if pessoa_normalizada != responsavel_normalizado:
-                self.mostrar_snackbar(
-                    f"❌ Apenas '{ultimo_responsavel}' pode devolver este item!", 
-                    ft.Colors.RED
-                )
+            if pessoa_devolvendo.strip().lower() != ultimo_responsavel.strip().lower():
+                self.mostrar_snackbar(f"❌ Apenas '{ultimo_responsavel}' pode devolver!", ft.Colors.RED)
                 return
             
-            # Cria staff se não existir
             self.model.create_staff(pessoa_devolvendo, "Professor")
-            
-            # Registra entrada
             self.model.register_movement(patrimonio, "IN", 1, pessoa_devolvendo)
             
-            self.mostrar_snackbar(f"✅ Devolução registrada: {patrimonio} por {pessoa_devolvendo}", ft.Colors.BLUE)
+            self.mostrar_snackbar(f"✅ Devolução registrada!", ft.Colors.BLUE)
             self.view.input_patrimonio_devolucao.value = ""
             self.view.input_pessoa_devolucao.value = ""
             
@@ -457,10 +442,10 @@ class Unbox_Controller:
             self.carregar_dashboard_stats()
             
         except Exception as ex:
-            self.mostrar_snackbar(f"Erro ao registrar devolução: {ex}", ft.Colors.RED)
+            self.mostrar_snackbar(f"Erro: {ex}", ft.Colors.RED)
  
     def formatar_timestamp_local(self, timestamp_str):
-        """Converte timestamp UTC para horário local de São Paulo"""
+        """Converte timestamp UTC para horário local"""
         try:
             if isinstance(timestamp_str, str):
                 formatos = [
@@ -488,11 +473,9 @@ class Unbox_Controller:
                 data_obj = utc_tz.localize(data_obj)
             
             local_dt = data_obj.astimezone(self.timezone)
-            
             return local_dt.strftime("%d/%m/%Y %H:%M:%S")
             
         except Exception as e:
-            print(f"Erro ao formatar timestamp: {e}")
             return timestamp_str
  
     def carregar_movimentacoes_tabela(self):
@@ -502,7 +485,6 @@ class Unbox_Controller:
                 return
                 
             self.view.movimentacoes_data_table.rows.clear()
-            
             movimentos = self.model.get_recent_movements(50)
             
             for mov in movimentos:
@@ -510,7 +492,6 @@ class Unbox_Controller:
                 
                 tipo_text = "Saída" if tipo == "OUT" else "Entrada"
                 tipo_color = ft.Colors.RED if tipo == "OUT" else ft.Colors.GREEN
-                
                 data_formatada = self.formatar_timestamp_local(timestamp)
                 
                 row = ft.DataRow(cells=[
@@ -532,59 +513,39 @@ class Unbox_Controller:
             
         except Exception as e:
             print(f"Erro ao carregar movimentações: {e}")
-            import traceback
-            traceback.print_exc()
  
     def gerar_recibo_pdf(self, patrimonio, pessoa):
-        """Gera recibo em PDF - STREAMLIT PARA CRIAR GRÁFICO E NOME EM NUMÉRICO"""
+        """Gera recibo em PDF"""
         try:
-            # Busca informações do item
             item_info = self.model.buscar_item_por_patrimonio(patrimonio)
             if not item_info:
-                print(f"Item {patrimonio} não encontrado")
                 return
             
-            nome_item = item_info[1]  # nome do item
+            nome_item = item_info[1]
             
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(200, 10, txt="RECIBO DE EMPRESTIMO DE ATIVO", ln=1, align='C')
+            pdf.cell(200, 10, txt="RECIBO DE EMPRESTIMO", ln=1, align='C')
             pdf.ln(10)
             
             pdf.set_font("Arial", size=12)
             
-            agora_utc = datetime.now(pytz.UTC)
-            agora_local = agora_utc.astimezone(self.timezone)
+            agora_local = datetime.now(self.timezone)
             data_formatada = agora_local.strftime("%d/%m/%Y %H:%M:%S")
-            
-            # IMPLEMENTAÇÃO: Nome do responsável em formato numérico (ex: 001)
             codigo_pessoa = f"{abs(hash(pessoa)) % 1000:03d}"
             
             texto = f"""
-Declaro que recebi o item abaixo listado em perfeitas condições de uso.
-Comprometo-me a devolve-lo quando solicitado ou quando utilização for concluida.
-
-Dados do Emprestimo:
-------------------------------------------------
-Data: {data_formatada}
-Responsavel: {pessoa}
-Codigo Responsável: {codigo_pessoa}
 Item: {nome_item}
 Patrimonio: {patrimonio}
-------------------------------------------------
+Responsavel: {pessoa}
+Codigo: {codigo_pessoa}
+Data: {data_formatada}
             """
             pdf.multi_cell(0, 10, txt=texto)
-            pdf.ln(20)
-            
-            pdf.cell(200, 10, txt="_" * 50, ln=1, align='C')
-            pdf.cell(200, 10, txt="Assinatura do Responsavel", ln=1, align='C')
             
             nome_arquivo = f"recibo_{patrimonio}_{codigo_pessoa}.pdf"
             pdf.output(nome_arquivo)
-            
             os.startfile(nome_arquivo)
             
         except Exception as ex:
@@ -603,7 +564,7 @@ Patrimonio: {patrimonio}
             os.startfile(".")
             
         except Exception as ex:
-            self.mostrar_snackbar(f"Erro ao exportar: {ex}", ft.Colors.RED)
+            self.mostrar_snackbar(f"Erro: {ex}", ft.Colors.RED)
  
     def mostrar_snackbar(self, mensagem, cor):
         """Exibe snackbar com mensagem"""
@@ -615,14 +576,12 @@ Patrimonio: {patrimonio}
         snack.open = True
         self.page.update()
     
-    
     def deletar_categoria(self, categoria_id, nome_categoria):
-        """Deleta uma categoria após confirmação"""
+        """Deleta uma categoria"""
         def confirmar_exclusao(e):
             try:
                 self.model.deletar_categoria(categoria_id)
-                self.mostrar_snackbar(f"✅ Categoria '{nome_categoria}' deletada!", ft.Colors.GREEN)
-                # Limpa antes de recarregar
+                self.mostrar_snackbar(f"✅ Categoria deletada!", ft.Colors.GREEN)
                 self.view.categorias_data_table.rows.clear()
                 self.carregar_categorias_tabela()
                 dialog.open = False
@@ -638,7 +597,7 @@ Patrimonio: {patrimonio}
         
         dialog = ft.AlertDialog(
             title=ft.Text("⚠️ Confirmar Exclusão"),
-            content=ft.Text(f"Deseja realmente deletar a categoria '{nome_categoria}'?\n\nEsta ação não pode ser desfeita!"),
+            content=ft.Text(f"Deseja deletar '{nome_categoria}'?"),
             actions=[
                 ft.TextButton("Cancelar", on_click=cancelar),
                 ft.TextButton("Deletar", on_click=confirmar_exclusao, style=ft.ButtonStyle(color=ft.Colors.RED)),
@@ -649,14 +608,12 @@ Patrimonio: {patrimonio}
         dialog.open = True
         self.page.update()
     
-    
     def deletar_item(self, patrimonio, nome_item):
-        """Deleta um item após confirmação"""
+        """Deleta um item"""
         def confirmar_exclusao(e):
             try:
                 self.model.deletar_item(patrimonio)
-                self.mostrar_snackbar(f"✅ Item '{nome_item}' deletado!", ft.Colors.GREEN)
-                # Limpa antes de recarregar
+                self.mostrar_snackbar(f"✅ Item deletado!", ft.Colors.GREEN)
                 self.view.itens_data_table.rows.clear()
                 self.carregar_itens_tabela()
                 self.carregar_dashboard_stats()
@@ -673,7 +630,7 @@ Patrimonio: {patrimonio}
         
         dialog = ft.AlertDialog(
             title=ft.Text("⚠️ Confirmar Exclusão"),
-            content=ft.Text(f"Deseja realmente deletar o item:\n\n'{nome_item}' (Patrimônio: {patrimonio})?\n\nEsta ação não pode ser desfeita!"),
+            content=ft.Text(f"Deseja deletar '{nome_item}'?"),
             actions=[
                 ft.TextButton("Cancelar", on_click=cancelar),
                 ft.TextButton("Deletar", on_click=confirmar_exclusao, style=ft.ButtonStyle(color=ft.Colors.RED)),
