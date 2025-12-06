@@ -34,11 +34,11 @@ Este software foi desenvolvido como parte de um portfólio acadêmico e trabalho
 O projeto foi construído utilizando as seguintes bibliotecas:
 
 * **[Flet](https://flet.dev):** Construção da interface gráfica (GUI).
-* **SQLite3:** Banco de dados relacional (nativo).
-* **Pandas:** Manipulação de dados e exportação para Excel.
-* **FPDF:** Geração dinâmica de recibos em PDF.
-* **Pytz:** Gerenciamento de fusos horários (Timezone BR).
-* **Hashlib:** Segurança e criptografia de senhas.
+* **[SQLite3](https://sqlite.org/):** Banco de dados relacional (nativo).
+* **[Pandas](https://pandas.pydata.org/):** Manipulação de dados e exportação para Excel.
+* **[FPDF](https://pypi.org/project/fpdf/):** Geração dinâmica de recibos em PDF.
+* **[Pytz](https://pypi.org/project/pytz/):** Gerenciamento de fusos horários (Timezone BR).
+* **[Hashlib](https://pypi.org/project/hashlib/):** Segurança e criptografia de senhas.
 
 ## 🚀 Estrutura do Projeto (MVC)
 
