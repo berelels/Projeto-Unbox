@@ -1,79 +1,85 @@
------
+# 📦 Unbox | Sistema de Inventário Escolar (v1.0)
 
-# 📦 Unbox | Sistema de Inventário Escolar
+Uma aplicação desktop completa, desenvolvida em **Python**, para modernizar o controle de patrimônio e estoque escolar.
 
-Uma aplicação desktop robusta e intuitiva construída em **Python**, desenvolvida para facilitar a organização, controle e gestão de patrimônio e estoque escolar.
+O **Unbox** vai além de um simples CRUD: ele oferece controle de acesso, geração de documentos automáticos e relatórios gerenciais. O projeto utiliza a arquitetura **MVC (Model-View-Controller)** para garantir escalabilidade e o framework **Flet** para uma interface gráfica moderna baseada em Material Design.
 
-O projeto utiliza a arquitetura **MVC (Model-View-Controller)** para garantir um código limpo e escalável, e o framework **Flet** para uma interface gráfica moderna e responsiva baseada em Material Design.
+## 🚨 Sobre o Projeto
 
-## 🚨 Atenção
+Este software foi desenvolvido como parte de um portfólio acadêmico e trabalho colaborativo. O sistema utiliza banco de dados **SQLite** local e manipulação de arquivos para logs e configurações.
 
-Este projeto foi desenvolvido como parte de um trabalho colaborativo e serve como portfólio acadêmico. O sistema utiliza um banco de dados local **SQLite**. Sinta-se à vontade para explorar o código, sugerir melhorias ou usar como base para estudos\!
+## ✨ Funcionalidades Principais
 
-## ✨ Funcionalidades
+### 📊 Gestão e Dashboard
+* **Dashboard Analítico:** Painel com indicadores em tempo real de itens totais, itens emprestados e **alertas de estoque baixo**.
+* **Relatórios em Excel:** Exportação completa do inventário para `.xlsx` com um clique.
+* **Log de Auditoria:** Registro interno de criação e exclusão de usuários para segurança.
 
-  * **Dashboard Interativo:** Visão geral do sistema (em desenvolvimento).
-  * **Gestão de Categorias:** Cadastro e listagem de categorias de produtos (ex: Eletrônicos, Mobiliário) com validação de dados.
-  * **Cadastro de Itens:** Registro detalhado de bens com número de série, localização e definição de estoque mínimo.
-  * **Controle de Movimentações:** Sistema de entrada e saída (IN/OUT) vinculado a funcionários (Staff), com verificação automática de saldo em estoque.
-  * **Navegação Fluida:** Menu lateral (Navigation Rail) para alternar facilmente entre as telas de Dashboard, Categorias, Itens e Movimentações.
-  * **Banco de Dados Integrado:** Persistência de dados automática utilizando SQLite com integridade referencial (Foreign Keys).
+### 🔐 Segurança e Controle de Acesso
+* **Sistema de Login:** Autenticação segura com criptografia de senhas (SHA-256).
+* **Permissões (RBAC):** Diferenciação de interface e permissões entre **ADMIN** (acesso total) e usuários comuns (Professores, Coordenadores).
+    * *Apenas Admins podem gerenciar outros usuários.*
+
+### 📦 Controle de Estoque
+* **Cadastro Completo:** Registro de itens com Nº de Patrimônio, Categoria, Localização e Estoque Mínimo.
+* **Status Visual:** Indicadores coloridos na listagem (🟢 Disponível, 🟠 Baixo Estoque, 🔴 Sem Estoque).
+
+### 📄 Movimentações Inteligentes
+* **Fluxo de Empréstimo:** Saída de itens vinculada a um responsável.
+* **Validação de Devolução:** O sistema garante que apenas quem retirou o item pode devolvê-lo.
+* **Comprovantes Automáticos:** Geração de **Recibos em PDF** no ato do empréstimo, contendo data, hora e código de verificação.
 
 ## 💻 Tecnologias Utilizadas
 
-O projeto é escrito 100% em **Python** e utiliza as seguintes tecnologias:
+O projeto foi construído utilizando as seguintes bibliotecas:
 
-  * **[Flet](https://flet.dev):** Framework para construção de interfaces gráficas (GUI) modernas.
-  * **SQLite3:** Banco de dados relacional leve e serverless, nativo do Python.
-  * **Padrão MVC:** Organização estrutural para separar lógica de dados, interface e regras de negócio.
+* **[Flet](https://flet.dev):** Construção da interface gráfica (GUI).
+* **SQLite3:** Banco de dados relacional (nativo).
+* **Pandas:** Manipulação de dados e exportação para Excel.
+* **FPDF:** Geração dinâmica de recibos em PDF.
+* **Pytz:** Gerenciamento de fusos horários (Timezone BR).
+* **Hashlib:** Segurança e criptografia de senhas.
 
-## 🚀 Estrutura do Projeto (Arquitetura MVC)
+## 🚀 Estrutura do Projeto (MVC)
 
-O código foi modularizado seguindo rigorosamente o padrão Model-View-Controller:
+O código segue rigorosamente a separação de responsabilidades:
 
 | Arquivo | Componente | Responsabilidade |
 | :--- | :--- | :--- |
-| **unbox\_model.py** | **Model** | Gerencia o banco de dados e a lógica de negócio. Cria tabelas (`inventory`, `staff`, `locations`, `movements`) e executa queries SQL. |
-| **unbox\_view.py** | **View** | Responsável pela **UI**. Constrói o layout, tabelas, formulários e o menu lateral usando componentes do Flet. |
-| **controller.py** | **Controller** | O "cérebro" da aplicação. Conecta a View ao Model, gerencia eventos (cliques, trocas de tela) e atualiza a interface dinamicamente. |
+| **unbox_model.py** | **Model** | Regras de negócio, acesso ao SQLite, hashing de senhas e validação de dados. |
+| **unbox_view.py** | **View** | Camada visual. Contém os layouts, formulários, tabelas e lógica de exibição condicional (Admin vs User). |
+| **controller.py** | **Controller** | Orquestrador. Conecta a View ao Model, gerencia eventos, gera PDFs e controla a navegação. |
+| **login.py** | **View (Login)** | Tela inicial de autenticação e feedback de acesso. |
 
 ## 🔧 Instalação e Execução
 
-Para rodar este projeto localmente em sua máquina:
+Para rodar este projeto localmente:
 
-### Pré-requisitos
-
-  * Python 3.7 ou superior instalado.
-
-### 1\. Clonar o Repositório
-
+### 1. Clonar o Repositório
 ```bash
-git clone https://github.com/berelels/Projeto-Unbox
-```
+git clone [https://github.com/berelels/Projeto-Unbox](https://github.com/berelels/Projeto-Unbox)
+cd Projeto-Unbox
+````
 
 ### 2\. Instalar Dependências
 
-O projeto requer a biblioteca Flet. Instale via pip:
+O projeto agora requer bibliotecas adicionais. Execute:
 
 ```bash
-pip install flet
+pip install flet pandas openpyxl fpdf pytz
 ```
 
 ### 3\. Executar a Aplicação
 
-Certifique-se de ter um arquivo principal (ex: `main.py`) que inicializa o MVC. Execute o comando:
+Inicie o sistema pelo arquivo principal (certifique-se de que ele chama a tela de login):
 
 ```bash
-python main.py
-# ou
 flet run main.py
 ```
 
-> **Nota:** Ao iniciar a aplicação pela primeira vez, o arquivo `inventory.db` será criado automaticamente na raiz do projeto.
+> **Nota:** Ao iniciar pela primeira vez, o sistema criará automaticamente o banco de dados `inventory.db` e um usuário **Admin** padrão (`user: admin` | `pass: admin123`).
 
 ## 👥 Autores
-
-Este projeto foi desenvolvido em colaboração por:
 
   * **berelels**
   * **bielzkk123**
@@ -81,4 +87,4 @@ Este projeto foi desenvolvido em colaboração por:
 
 ## 📜 Licença
 
-Este projeto é de código aberto, por CC. Sinta-se livre para contribuir\!
+Este projeto é de código aberto. Sinta-se livre para contribuir\!
